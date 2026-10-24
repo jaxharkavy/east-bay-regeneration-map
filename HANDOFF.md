@@ -47,6 +47,12 @@ The local proxy's compressed-response header issue is fixed in `scripts/dev.mjs`
 3. A change to `main` automatically builds and deploys the frontend on Netlify. Backend changes also require redeploying the Edge Function; SQL changes require a migration. Do not assume a GitHub push updates Supabase.
 4. Preserve the $0 requirement and private attendee data. The handoff contains source and public identifiers only, no database dump, credentials, or owner setup link.
 
+## Registration confirmation update — October 24, 2026
+
+The frontend adds a private text confirmation download with event details and the cancellation link. It also keeps a successful registration available in page memory if session storage is blocked or full, and explains manual saving when clipboard copying fails. Refresh recovery still depends on session storage; volunteers should save the file before leaving. The public calendar remains free of cancellation tokens, and automated email stays OFF.
+
+Nine tests pass and the production build succeeds (the existing bundle-size warning remains). A synthetic local browser check verified the confirmation with blocked storage and the clipboard failure instructions; no production registrations were created. Original main was `7bd7d32373d3c0e86cc8c408e63f880c7f13009f` when checked. This change needs only the original repository's frontend deployment; no Supabase deployment or migration is required. Deploy through the original repository’s main branch and verify Netlify has published the new bundle before claiming the feature is live.
+
 ## Optional improvements after the MVP
 The owner can now create their Guild account, submit and approve a real event, then share the site. Automated email remains a separate setup decision: choose a free provider, verify sender/domain requirements, implement delivery and retries, and test actual receipt before telling users email works. Other later work can include organizer accounts, capacity/waitlists, automated retention, and accessibility refinements.
 
