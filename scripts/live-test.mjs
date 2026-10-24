@@ -1,0 +1,36 @@
+import fs from 'node:fs';
+import assert from 'node:assert/strict';
+const base=process.env.TEST_API||'https://uznbvkuxfhdriiqdotsr.supabase.co/functions/v1/regeneration-api';
+const origin=process.env.TEST_ORIGIN||'http://localhost:5173';
+const secrets=JSON.parse(fs.readFileSync(new URL('../../../work/qa-secrets.json',import.meta.url)));
+let cookie='';
+async function request(path,{method='GET',body,auth=false,originOverride=origin}={}){
+ const response=await fetch(base+path,{method,headers:{Origin:originOverride,...(body?{'Content-Type':'application/json'}:{}),...(auth?{Cookie:cookie}:{})},body:body?JSON.stringify(body):undefined});
+ const type=response.headers.get('content-type')||'';const data=type.includes('application/json')?await response.json():await response.text();return {status:response.status,data,headers:response.headers};
+}
+const list=await request('/events');assert.equal(list.status,200);assert.equal(list.data.connected,true);assert.ok(list.data.events.length>=5);assert.ok(list.data.events.every(e=>!('contact_email' in e)));console.log('PASS: live discovery contains public event fields only');
+let setup=await request('/admin/setup',{method:'POST',body:secrets});assert.equal(setup.status,200,JSON.stringify(setup.data));
+const again=await request('/admin/setup',{method:'POST',body:secrets});assert.equal(again.status,403);console.log('PASS: one-time Guild setup cannot be replayed');
+const login=await request('/admin/login',{method:'POST',body:{email:secrets.email,password:secrets.password}});assert.equal(login.status,200,JSON.stringify(login.data));cookie=login.headers.getSetCookie().find(s=>s.startsWith('guild_session=')||s.startsWith('__Host-guild_session=')).split(';')[0];secrets.cookie=cookie;fs.writeFileSync(new URL('../../../work/qa-secrets.json',import.meta.url),JSON.stringify(secrets),{mode:0o600});
+assert.equal((await request('/admin/events')).status,401);assert.equal((await request('/admin/events',{auth:true})).status,200);console.log('PASS: Guild data requires an authorized session');
+const payload={title:'QA TEST — NOT A REAL EVENT',organization:'QA Test Organization',website:'',category:'Gardens & growing',description:'This temporary event is an automated integration test, not a real volunteer opportunity.',location_name:'QA placeholder location',address:'Lakeside Park (test only)',city:'Oakland',latitude:37.8064,longitude:-122.2584,starts_at:new Date(Date.now()+86400000*7).toISOString(),ends_at:new Date(Date.now()+86400000*7+3600000).toISOString(),accessibility:'Test only',bring:'Test only',contact_name:'QA Organizer',contact_email:'organizer@example.com',consent:true};
+const cross=await request('/submissions',{method:'POST',body:payload,originOverride:'https://untrusted.example'});assert.equal(cross.status,403);
+const submission=await request('/submissions',{method:'POST',body:payload});assert.equal(submission.status,201,JSON.stringify(submission.data));const id=submission.data.id;secrets.event_id=id;fs.writeFileSync(new URL('../../../work/qa-secrets.json',import.meta.url),JSON.stringify(secrets),{mode:0o600});
+assert.equal((await request(`/events/${id}`)).status,404);assert.ok(!(await request('/events')).data.events.some(e=>e.id===id));console.log('PASS: submitted event remains private until approval; cross-site writes blocked');
+const registration={event_id:id,name:'QA Volunteer',email:'volunteer@example.com',consent:true};
+assert.equal((await request('/registrations',{method:'POST',body:registration})).status,409);
+const demoId=list.data.events.find(e=>e.is_demo).id;assert.equal((await request('/registrations',{method:'POST',body:{...registration,event_id:demoId}})).status,409);
+assert.equal((await request(`/admin/events/${id}`,{method:'PATCH',body:{status:'published'},auth:true})).status,200);
+assert.equal((await request(`/events/${id}`)).status,200);
+const races=await Promise.all([request('/registrations',{method:'POST',body:registration}),request('/registrations',{method:'POST',body:registration})]);assert.deepEqual(races.map(r=>r.status).sort(),[201,409]);const saved=races.find(r=>r.status===201).data;assert.equal(saved.email_enabled,false);assert.match(saved.cancel_token,/^[a-f0-9]{64}$/);console.log('PASS: real registration persists, concurrent duplicates blocked, demo signup rejected');
+const roster=await request(`/admin/events/${id}/registrations`,{auth:true});assert.equal(roster.data.registrations.length,1);assert.equal(roster.data.registrations[0].email,'volunteer@example.com');assert.equal((await request(`/admin/events/${id}/registrations`)).status,401);
+const cal=await request(`/events/${id}/calendar`);assert.equal(cal.status,200);assert.ok(cal.data.includes('BEGIN:VCALENDAR'));assert.ok(!cal.data.includes('volunteer@example.com'));console.log('PASS: private roster protected, valid calendar contains no attendee data');
+const invalid=await request('/registration',{method:'POST',body:{token:'0'.repeat(64),action:'cancel'}});assert.equal(invalid.status,404);
+const manage=await request('/registration',{method:'POST',body:{token:saved.cancel_token,action:'view'}});assert.equal(manage.data.status,'registered');assert.ok(!('email' in manage.data));
+const cancel=await request('/registration',{method:'POST',body:{token:saved.cancel_token,action:'cancel'}});assert.equal(cancel.data.status,'cancelled');assert.equal((await request('/registration',{method:'POST',body:{token:saved.cancel_token,action:'cancel'}})).data.status,'cancelled');console.log('PASS: cancellation token is private, invalid token rejected, cancellation persists and is idempotent');
+assert.equal((await request('/support',{method:'POST',body:{email:'support@example.com',message:'QA test: correction request for the test event.'}})).status,201);
+assert.equal((await request('/admin/support')).status,401);assert.ok((await request('/admin/support',{auth:true})).data.requests.length>0);
+assert.equal((await request(`/admin/events/${id}`,{method:'PATCH',body:{status:'cancelled'},auth:true})).status,200);
+assert.equal((await request('/registrations',{method:'POST',body:{...registration,email:'another@example.com'}})).status,409);
+assert.equal((await request(`/admin/events/${id}`,{method:'PATCH',body:{status:'hidden'},auth:true})).status,200);console.log('PASS: support inbox protected, cancelled events reject new signups, QA event hidden');
+console.log('All live integration checks passed.');
