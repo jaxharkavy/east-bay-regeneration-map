@@ -10,7 +10,9 @@ Build and deploy the East Bay Regeneration Map MVP. User is a beginner. Handle r
 - Supabase API: `https://uznbvkuxfhdriiqdotsr.supabase.co`.
 - Edge Function: `regeneration-api`.
 - Netlify team slug: `axel-axel-harkavy`; team display name Aura Farmers.
-- Netlify deployment is being configured; update this file with the final URL when complete.
+- Live site: https://east-bay-regeneration-map.netlify.app
+- Netlify dashboard: https://app.netlify.com/projects/east-bay-regeneration-map
+- Netlify Free confirmed, no payment method, no paid upgrades. Production is public; deploy previews remain private.
 
 Public project IDs and URLs are not credentials. Each collaborator must authorize their own access to the services. Never put secret keys, attendee data, passwords, auth cookies, or private setup links in the repo or AI handoff.
 
@@ -32,13 +34,21 @@ Supabase passes function request paths with a different prefix in some environme
 - Production build succeeds.
 - Supabase security advisor reports informational `rls_enabled_no_policy` notices only. This is intentional: no public database access; service-role API owns operations. Do not add permissive public policies just to silence these notices.
 
-## Work in progress / next steps
-1. Finish browser QA. The local proxy initially copied compressed Content-Length headers after decompressing upstream data, truncating responses. Fixed by removing length/encoding/transfer headers in `scripts/dev.mjs`.
-2. Upload reviewed source to GitHub; configure Netlify free hosting and deploy.
-3. Update the Edge Function's allowed SITE_URL to the final HTTPS Netlify origin, using `scripts/edge-files.mjs` and redeploy. All writes enforce exact Origin matching. Test through the real Netlify API proxy, including HttpOnly cookie sign-in and calendar links.
-4. Provide the user a private one-time Guild setup link. Store only the token hash in `guild_setup`, with a short expiry; never commit the link.
-5. Remove the temporary QA auth account and its synthetic data. QA event is hidden. All QA data is fictional and disposable. There is no real attendee data yet.
-6. Save final deployment details and beginner handoff instructions, then update this file.
+## Deployment and handoff status — October 24, 2026
+The MVP is deployed and publicly accessible. The complete live integration suite also passed through the production Netlify proxy: Guild cookie login, private pending submissions, approval, simultaneous duplicate protection, roster privacy, calendar download, cancellation, and support inbox. Public event HTML includes event-specific metadata. Browser checks confirmed category filtering, map pins, event details, and disabled demo signups.
+
+Supabase Edge Function version 3 enforces `SITE_URL=https://east-bay-regeneration-map.netlify.app`. Its source matches this repository. The temporary QA account and synthetic records were removed. Five fictional demo events remain. A private one-time Guild setup link was given to the owner separately; it expires October 26, 2026. Owner must choose their own email/password before reviewing submissions. Never ask them to paste passwords into an AI chat.
+
+The local proxy's compressed-response header issue is fixed in `scripts/dev.mjs`. Local live writes are intentionally rejected once the backend origin is set to production. Use read-only local demo mode or a separate Supabase project for development.
+
+## Continue with a friend's AI account
+1. Give the friend this repository URL or the source ZIP, and tell their AI to read this file and README.md first. They can clone or fork it and make local changes using their own AI subscription.
+2. Keep production accounts under the owner's control. For direct production collaboration, the owner must invite the friend's own account through the service's supported access controls and check whether that adds a paid seat. Never upgrade or share an owner password/API key to enable this. Alternatively, have the friend prepare a GitHub pull request for the owner to merge.
+3. A change to `main` automatically builds and deploys the frontend on Netlify. Backend changes also require redeploying the Edge Function; SQL changes require a migration. Do not assume a GitHub push updates Supabase.
+4. Preserve the $0 requirement and private attendee data. The handoff contains source and public identifiers only, no database dump, credentials, or owner setup link.
+
+## Optional improvements after the MVP
+The owner can now create their Guild account, submit and approve a real event, then share the site. Automated email remains a separate setup decision: choose a free provider, verify sender/domain requirements, implement delivery and retries, and test actual receipt before telling users email works. Other later work can include organizer accounts, capacity/waitlists, automated retention, and accessibility refinements.
 
 ## Current limitations
 No automated email or password-reset email; no calendar sync; no organizer login; no capacity limits or waitlists. Guild text edits are supported; time/location changes require hiding and replacing the event plus contacting registered attendees. Data retention cleanup is manual. Free Supabase may pause after inactivity; Netlify has capped free credits.

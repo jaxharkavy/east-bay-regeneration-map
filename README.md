@@ -2,6 +2,10 @@
 
 A small community-owned volunteer-event map, built for an East Bay hackathon pilot.
 
+**Live:** https://east-bay-regeneration-map.netlify.app · **Continue with another builder:** [HANDOFF.md](HANDOFF.md)
+
+Deployed October 24, 2026 on verified Supabase Free and Netlify Free plans. Production signup, moderation, privacy, calendar, and cancellation checks passed. The site owner must complete their separate private Guild setup link before approving real events.
+
 ## What works
 
 - Map and list discovery with city, category, keyword, and date filters.
