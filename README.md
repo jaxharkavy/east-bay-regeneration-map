@@ -11,12 +11,12 @@ Deployed October 24, 2026 on verified Supabase Free and Netlify Free plans. Prod
 - Map and list discovery with city, category, keyword, and date filters.
 - Organization submissions with a public meeting-place pin and private contact details.
 - Guild approval, editing of event text, hiding/cancelling events, and private attendee CSV exports.
-- Real guest registrations, concurrent duplicate protection, on-screen confirmation, downloadable `.ics` calendar entries, and private cancellation links.
+- Real guest registrations, concurrent duplicate protection, on-screen confirmation, downloadable `.ics` calendar entries, private cancellation links, and a private `.txt` confirmation to keep offline.
 - A private support inbox for corrections, removal requests, and lost signup links.
 - Clearly marked fictional demo events that cannot accept registrations.
 - Public event pages with server-rendered titles, descriptions, and event information.
 
-**Automated email is OFF.** Confirmation is shown on screen. Volunteers must save their calendar file and cancellation link. Guild administrators must contact attendees themselves about changes. Calendar downloads do not update automatically.
+**Automated email is OFF.** Confirmation is shown on screen. Volunteers should download their private confirmation (event details and cancellation link) before closing the tab, and optionally save a calendar file. Keep the confirmation private: anyone with its link can cancel the registration. Guild administrators must contact attendees themselves about changes. Calendar downloads do not update automatically.
 
 This is a prototype awaiting Guild adoption. Demo events are not real bookings or claims of affiliation.
 
